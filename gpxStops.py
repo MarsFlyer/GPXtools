@@ -1,7 +1,8 @@
 # Read a GPX and find the significant time gaps
 # Show the date & time (when stopped), duration and location (lat,lon can be pasted into Google maps' search).
-
-# TODO: use geopy to reverse lookup the location of the stop using the OpenStreetMap's Nominatim (aka Geocoding) reverse lookup.
+# Also show any distance gaps e.g. when you forget to restart your tracking after a stop.
+# Use geopy to reverse lookup the location of the stop using the OpenStreetMap's Nominatim.
+# TODO combine stops where there's no significant distance between them.
 
 import gpxpy
 import gpxpy.gpx
@@ -24,18 +25,18 @@ if  len(sys.argv) > 2:
     if sys.argv[2].lower() in ("false", "no", "0"):
         getLocations = False
 
+# This throttles rqeuests to this the free service. Max of once every 2 seconds.
 @sleep_and_retry
 @limits(calls=1, period=2)
 def getLocation(lat, lon):
     if getLocations == False:
         return ''
     try:
-        # TODO throttling of requests to 2 seconds
         # print('Reverse lookup' + str(lat) + ',' + str(lon))
         location = geolocator.reverse(str(lat) + ',' + str(lon))
-    except:
+    except Exception as e:
         # print('location not found')
-        return 'not found'
+        return 'not found ' + str(e)
     address = location.raw['address']
     # print(address)
     # print('')
@@ -95,8 +96,7 @@ def getLocation(lat, lon):
 # Initialize Nominatim API 
 geolocator = Nominatim(user_agent="my_geopy_app")
 # Test a location
-# location = getLocation(52.03899,0.726502)
-# # location = getLocation(52.067115,0.787675)
+# location = getLocation(52.108352,0.924454)
 # print(location)
 # exit()
 
