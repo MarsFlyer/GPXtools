@@ -1,7 +1,6 @@
 # Read a GPX and find the significant time gaps
 # Show the date & time (when stopped), duration and location (lat,lon can be pasted into Google maps' search).
 
-import gpxpy
 import gpxpy.gpx
 import datetime
 import sys
@@ -48,7 +47,8 @@ for track in gpx.tracks:
                     print('Distance missed: {0:0.1f} {1} at lat,lon: {2},{3}'.format((distance-distanceLast)/unitsDivider, units, point.latitude, point.longitude))
             pointLast= point
             timeLast = point.time
-            # print('Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation))
-            # break
+            # print('Time {0} at ({1},{2})'.format(point.time, point.latitude, point.longitude))
+            # if i > 10:
+            #     break
     interval = (timeLast - timeFirst)
     print('End: {0} duration: {1} stopped: {2}'.format(timeLast.astimezone(), interval, stopped))

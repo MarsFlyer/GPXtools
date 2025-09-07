@@ -4,7 +4,6 @@
 # Use geopy to reverse lookup the location of the stop using the OpenStreetMap's Nominatim.
 # TODO combine stops where there's no significant distance between them.
 
-import gpxpy
 import gpxpy.gpx
 import datetime
 import sys
@@ -17,6 +16,7 @@ distanceGap = 100 # metres
 locationGap = 500 # metres
 unitsDivider = 1609 # metres per mile
 units = 'miles'
+url = 'https://www.google.com/maps/place/'
 
 # Get GPX file name and option from arguments
 file = sys.argv[1]
@@ -130,7 +130,7 @@ for track in gpx.tracks:
                 distance = point_data[i].distance_from_start
                 if getLocations:
                     location = getLocation(pointLast.latitude, pointLast.longitude)
-                print('{0} {1} minutes at {4:0.1f} {5}. lat,lon: {2},{3} location: {6}'.format(timeLast.astimezone(), int(interval.seconds/60), pointLast.latitude, pointLast.longitude, distance/unitsDivider, units, location))
+                print('{0} {1} minutes at {4:0.1f} {5}. Location: {6} {7}{2},{3}'.format(timeLast.astimezone(), int(interval.seconds/60), pointLast.latitude, pointLast.longitude, distance/unitsDivider, units, location, url))
                 distanceLast = point_data[i-1].distance_from_start
                 if distance - distanceLast > distanceGap:
                     location = '^'
