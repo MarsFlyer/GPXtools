@@ -2,6 +2,8 @@
 # Show the date & time (when stopped), duration and location (lat,lon can be pasted into Google maps' search).
 # Also show any distance gaps e.g. when you forget to restart your tracking after a stop.
 # Use geopy to reverse lookup the location of the stop using the OpenStreetMap's Nominatim.
+# New check for low speed stops, where the track wasn't paused.
+# TODO get seconds from an argument - particularly useful for short rides where you want to know about shorter stops.
 # TODO combine stops where there's no significant distance between them.
 
 import gpxpy.gpx
@@ -12,6 +14,7 @@ from ratelimit import limits, sleep_and_retry
 
 # Settings
 secondsGap = 120 # seconds
+speedLow = 0.5 # metres per second. 1 m/s = 3.6 km/s
 distanceGap = 100 # metres
 locationGap = 500 # metres
 unitsDivider = 1609 # metres per mile
@@ -108,6 +111,7 @@ point_data = gpx.get_points_data()
 i = -1
 stopped = None
 location = ''
+speed = 0
 for track in gpx.tracks:
     for segment in track.segments:
         timeLast = None
@@ -118,11 +122,13 @@ for track in gpx.tracks:
                 print('Start: {0}'.format(point.time.astimezone()))
             timeThis = point.time
             if timeLast == None:
+                pointLast = point
                 timeLast = point.time
                 continue
             interval = timeThis - timeLast
+            speed = point.speed_between(pointLast)
             # print('Interval: ',interval)
-            if interval.seconds > secondsGap:
+            if interval.seconds > secondsGap and speed > speedLow:
                 if stopped == None:
                     stopped = interval
                 else:
@@ -130,16 +136,26 @@ for track in gpx.tracks:
                 distance = point_data[i].distance_from_start
                 if getLocations:
                     location = getLocation(pointLast.latitude, pointLast.longitude)
-                print('{0} {1} minutes at {4:0.1f} {5}. Location: {6} {7}{2},{3}'.format(timeLast.astimezone(), int(interval.seconds/60), pointLast.latitude, pointLast.longitude, distance/unitsDivider, units, location, url))
+                if interval.seconds > 60:
+                    stop = '{0} minutes'.format(int(interval.seconds/60))
+                else:
+                    stop = '{0} seconds'.format(int(interval.seconds))
+                # Example: YYYY-MM-DD HH:MM:SS+HH:MM n minutes at 1.2 miles. Location: Village, Town, County https://www.google.com/maps/place/51.123456,-0.123456
+                print('{0} {1} at {4:0.1f} {5}. Location: {6} {7}{2},{3}'.format(timeLast.astimezone(), stop, pointLast.latitude, pointLast.longitude, distance/unitsDivider, units, location, url))
                 distanceLast = point_data[i-1].distance_from_start
                 if distance - distanceLast > distanceGap:
                     location = '^'
                     if getLocations and (distance - distanceLast > locationGap):
                         location = getLocation(point.latitude, point.longitude)
                     print('Distance missed: {0:0.1f} {1} at lat,lon: {2},{3} location: {4}'.format((distance-distanceLast)/unitsDivider, units, point.latitude, point.longitude, location))
-            pointLast= point
-            timeLast = point.time
+            # print('{0} speed {1}'.format(i, speed))
+            pointLast = point
+            if speed > speedLow:
+                timeLast = point.time
+            # else:
+            #     print('{0} time {2} speed {1} last {3}'.format(i, speed, point.time, timeLast))
             # print('Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation))
-            # break
+            # if i > 10:
+            #     break
     interval = (timeLast - timeFirst)
     print('End: {0} duration: {1} stopped: {2}'.format(timeLast.astimezone(), interval, stopped))
